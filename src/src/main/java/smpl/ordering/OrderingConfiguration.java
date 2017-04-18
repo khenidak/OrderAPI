@@ -3,8 +3,15 @@ package smpl.ordering;
 import com.microsoft.applicationinsights.TelemetryClient;
 import com.microsoft.applicationinsights.TelemetryConfiguration;
 import com.mongodb.MongoClient;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
+import com.mongodb.MongoClientURI;
 import com.mongodb.MongoClientOptions;
 import com.mongodb.ServerAddress;
+import com.mongodb.MongoCredential;
+import com.mongodb.ServerAddress;
+
 //import com.mongodb.MongoClientURI;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +31,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.net.InetAddress;
-
 @SuppressWarnings("ALL")
 @Configuration
 @ComponentScan
@@ -52,35 +58,24 @@ public class OrderingConfiguration
     {
         MongoClient client;
         MongoClient mongoClientURI = null;
-        MongoClientOptions.Builder options = MongoClientOptions.builder();
-        options.socketKeepAlive(false);
+        String mongoDB = mongoDBProperties.getDatabase();
+    
 
-        String mongoHost = mongoDBProperties.getHost();
-
-        if (!Utility.isNullOrEmpty(System.getenv("MONGO_HOST")))
-        {
-            mongoHost = System.getenv("MONGO_HOST"); // Using for Docker Container format
-        }
+        String mongoHost = System.getenv("MONGO_HOST"); // Using for Docker Container format
         System.out.println("------ DEBUG MONGO_HOST : " + mongoHost);
         System.out.println("------ DEBUG Hostname : " + InetAddress.getLocalHost());
 
-        String mongoDB = mongoDBProperties.getDatabase();
+       MongoClientURI uri = new MongoClientURI(mongoHost);
+        client = new MongoClient(uri);
 
-        if (mongoDB != null && !mongoDB.isEmpty() && mongoHost != null && !mongoHost.isEmpty())
-        {
-            List<ServerAddress> hosts = new ArrayList<>();
-            for (String host : mongoHost.split(","))
-            {
-                hosts.add(new ServerAddress(host));
-            }
-            client = new MongoClient(hosts, options.build());
-        }
-        else
-        {
-            client = new MongoClient();
-        }
-        System.out.println("------ DEBUG client : " + client);
-        System.out.println("------ DEBUG mongoDB : " + mongoDB);
+
+
+        DB db = client.getDB( "ordering" );
+        DBCollection coll = db.getCollection("catalog");
+        DBObject myDoc = coll.findOne();
+        System.out.println(myDoc);
+
+
         return new MongoTemplate(client, mongoDB);
     }
 
